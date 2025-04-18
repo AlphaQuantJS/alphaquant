@@ -11,7 +11,6 @@ _Pandas + TA-Lib + Backtrader — all in JS_
 
 ![AlphaQuant Demo](https://user-images.githubusercontent.com/674621/196881240-fbccdcf4-753e-4f82-a8b5-e471d6c13d02.gif)
 
-
 ---
 
 ## ✨ About
@@ -94,6 +93,7 @@ AlphaQuant uses **Turborepo + Changesets + GitHub Actions** to provide zero-conf
 - ✅ ESLint via `.eslintrc.json` (strict style rules)
 - ✅ Commitlint + Husky enforce Conventional Commits
 - ✅ `turbo run` manages build/test/lint pipelines
+- ✅ Prettier config in `.prettierrc` ensures consistent formatting
 - 🚀 `changeset` auto-generates versions + changelog
 - 📦 Auto-publish to npm on merge to `main` (with `NPM_TOKEN`)
 
@@ -130,4 +130,3 @@ Together we can bring **quant tools to the web**.
 ## 📜 License
 
 MIT © AlphaQuant Authors — use freely, build boldly.
-

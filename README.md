@@ -1,14 +1,9 @@
-# AlphaQuant
 
 ```markdown
-<h1 align="center">
-  ⚡️ AlphaQuant
-</h1>
+# ⚡️ AlphaQuant
 
-<p align="center">
-  <b>Modern JavaScript Framework for Quantitative Finance</b><br>
-  <i>Pandas + TA-Lib + Backtrader — all in JS</i>
-</p>
+**Modern JavaScript Framework for Quantitative Finance**  
+_Pandas + TA-Lib + Backtrader — all in JS_
 
 <p align="center">
   <a href="https://github.com/alphaquant/alphaquant/actions/workflows/ci.yml">
@@ -22,9 +17,7 @@
   <img src="https://img.shields.io/badge/status-MVP-orange?style=flat-square" />
 </p>
 
-<p align="center">
-  <img src="https://user-images.githubusercontent.com/674621/196881240-fbccdcf4-753e-4f82-a8b5-e471d6c13d02.gif" width="600" alt="demo gif" />
-</p>
+![AlphaQuant Demo](https://user-images.githubusercontent.com/674621/196881240-fbccdcf4-753e-4f82-a8b5-e471d6c13d02.gif)
 
 ---
 
@@ -59,7 +52,7 @@ Full example: [`examples/sma-cross.ts`](./examples/sma-cross.ts)
 
 ---
 
-## 🧠 Architecture
+## 📁 Monorepo Structure
 
 ```
 /packages/
@@ -85,7 +78,7 @@ turbo run test    # Run tests (WIP)
 npx changeset     # Start new release
 ```
 
-🔁 CI/CD is fully automated via GitHub Actions + Changesets. See [How CI/CD Works](#️how-cicd-works)
+CI/CD is fully automated via GitHub Actions + Changesets. See [How CI/CD Works](#️how-cicd-works)
 
 ---
 
@@ -145,4 +138,3 @@ Together we can bring **quant tools to the web**.
 
 MIT © AlphaQuant Authors — use freely, build boldly.
 ```
-

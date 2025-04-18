@@ -10,7 +10,9 @@
     "prepare": "husky && husky install",
     "changeset": "changeset",
     "release": "changeset publish",
-    "version-packages": "changeset version"
+    "version-packages": "changeset version",
+    "lint": "eslint . --ext .ts --ignore-path .gitignore",
+    "test": "echo \"no tests at root\" && exit 0"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.2",

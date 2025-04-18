@@ -1,23 +1,16 @@
-
-```markdown
 # ⚡️ AlphaQuant
 
 **Modern JavaScript Framework for Quantitative Finance**  
 _Pandas + TA-Lib + Backtrader — all in JS_
 
-<p align="center">
-  <a href="https://github.com/alphaquant/alphaquant/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/alphaquant/alphaquant/ci.yml?branch=main&label=CI&style=flat-square&logo=github" alt="CI Status" />
-  </a>
-  <a href="https://www.npmjs.com/org/alphaquant">
-    <img src="https://img.shields.io/npm/v/@alphaquant/core?style=flat-square&logo=npm" alt="NPM Version" />
-  </a>
-  <img src="https://img.shields.io/badge/Built%20With-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" />
-  <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" />
-  <img src="https://img.shields.io/badge/status-MVP-orange?style=flat-square" />
-</p>
+[![CI](https://img.shields.io/github/actions/workflow/status/alphaquant/alphaquant/ci.yml?branch=main&label=CI&style=flat-square&logo=github)](https://github.com/alphaquant/alphaquant/actions/workflows/ci.yml)
+[![NPM Version](https://img.shields.io/npm/v/@alphaquant/core?style=flat-square&logo=npm)](https://www.npmjs.com/org/alphaquant)
+![TypeScript](https://img.shields.io/badge/Built%20With-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![MIT License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
+![Status](https://img.shields.io/badge/status-MVP-orange?style=flat-square)
 
 ![AlphaQuant Demo](https://user-images.githubusercontent.com/674621/196881240-fbccdcf4-753e-4f82-a8b5-e471d6c13d02.gif)
+
 
 ---
 
@@ -137,4 +130,4 @@ Together we can bring **quant tools to the web**.
 ## 📜 License
 
 MIT © AlphaQuant Authors — use freely, build boldly.
-```
+

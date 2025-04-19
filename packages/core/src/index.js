@@ -1,4 +1,2 @@
-export * from './AQDataFrame.js';
-export * from './StatsUtils.js';
-export * from './Preprocessing.js';
-
+export * from './StatsUtils';
+export * from './Preprocessing';

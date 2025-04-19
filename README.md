@@ -61,6 +61,21 @@ Full example: [`examples/sma-cross.ts`](./examples/sma-cross.ts)
 
 ---
 
+## 🧪 Testing
+
+We use [Jest](https://jestjs.io/) for unit testing with native ESM support in Node.js.
+
+Because this package uses `"type": "module"` and ES module syntax (`import/export`), tests are run with the `--experimental-vm-modules` flag enabled.
+
+To run tests:
+
+```bash
+npm run test
+npm run test:watch
+```
+
+---
+
 ## 🧪 Development Workflow
 
 ```bash

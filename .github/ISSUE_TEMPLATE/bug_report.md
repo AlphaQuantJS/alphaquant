@@ -1,7 +1,7 @@
 ---
 name: Bug Report
 about: Report a bug in AlphaQuant
-title: "[BUG] Something is broken"
+title: '[BUG] Something is broken'
 labels: bug
 ---
 
@@ -26,4 +26,3 @@ What should have happened?
 - OS:
 - Node version:
 - AlphaQuant version:
-

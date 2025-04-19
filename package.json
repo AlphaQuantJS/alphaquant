@@ -5,14 +5,13 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "eslint . --ext .ts --ignore-path .gitignore",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format": "prettier --write .",
     "check-types": "turbo run check-types",
     "prepare": "husky && husky install",
     "changeset": "changeset",
     "release": "changeset publish",
     "version-packages": "changeset version",
     "test": "echo \"no tests at root\" && exit 0",
-    "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {

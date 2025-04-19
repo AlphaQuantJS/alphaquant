@@ -1,7 +1,7 @@
 ---
 name: Feature Request
 about: Suggest an idea or feature for AlphaQuant
-title: "[FEATURE] Your title here"
+title: '[FEATURE] Your title here'
 labels: enhancement
 ---
 
@@ -12,4 +12,3 @@ Describe your idea in detail.
 ## 🤔 Why is this useful?
 
 ## 🛠 Alternatives considered (if any)
-

@@ -1,6 +1,5 @@
 ### 📄 `CONTRIBUTING.md`
 
-```markdown
 # 🤝 Contributing to AlphaQuant
 
 Thank you for your interest in contributing to **AlphaQuant** — the open-source JavaScript framework for quantitative analysis and algorithmic trading.
@@ -13,18 +12,16 @@ We welcome contributions of all kinds: code, documentation, examples, bug report
 
 AlphaQuant uses a **monorepo** structure:
 
-```
 /packages/
-  core/       # DataFrame & data utilities
-  ta/         # Technical analysis indicators
-  strategy/   # Strategy interfaces and helpers
-  backtest/   # Backtesting engine
-  report/     # Output and metrics formatter
+core/ # DataFrame & data utilities
+ta/ # Technical analysis indicators
+strategy/ # Strategy interfaces and helpers
+backtest/ # Backtesting engine
+report/ # Output and metrics formatter
 
 /apps/
-  cli/        # Node.js CLI tool
-  playground/ # Browser-based playground
-```
+cli/ # Node.js CLI tool
+playground/ # Browser-based playground
 
 ---
 
@@ -32,6 +29,7 @@ AlphaQuant uses a **monorepo** structure:
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
+
    ```bash
    git clone https://github.com/AlphaQuantJS/alphaquant.git
    cd alphaquant
@@ -39,6 +37,7 @@ AlphaQuant uses a **monorepo** structure:
    ```
 
 3. **Create a feature branch:**
+
    ```bash
    git checkout -b feature/my-awesome-feature
    ```
@@ -46,6 +45,7 @@ AlphaQuant uses a **monorepo** structure:
 4. Make your changes inside the appropriate `packages/*` or `apps/*` folder.
 
 5. Run tests and linting before pushing:
+
    ```bash
    npm run lint && npm run test
    ```
@@ -53,6 +53,20 @@ AlphaQuant uses a **monorepo** structure:
 6. **Commit using conventional format** (see below)
 
 7. **Push and open a Pull Request** to `main` or `dev` branch
+
+---
+
+## 📏 Coding Standards & Best Practices
+
+AlphaQuant is performance-critical financial software.  
+Please **read our [Coding Guidelines](./CODING_GUIDELINES.md)** to understand:
+
+- How to write high-performance, V8-optimized JavaScript;
+- Best practices for financial accuracy (avoid rounding errors, use integers/BigInt/etc);
+- Structuring modular code that runs in Node.js **and** browser;
+- Error handling, testing, and profiling recommendations.
+
+Following these practices ensures code correctness, maintainability, and speed.
 
 ---
 
@@ -72,24 +86,27 @@ AlphaQuant uses a **monorepo** structure:
 We use [**Conventional Commits**](https://www.conventionalcommits.org/) to generate changelogs and version bumps automatically.
 
 ### Format:
+
 ```
 <type>(scope): short description
 ```
 
 ### Examples:
+
 - `feat(ta): add Bollinger Bands indicator`
 - `fix(backtest): fix division by zero bug`
 - `docs(core): improve merge() API documentation`
 
 ### Common Types:
-| Type     | Purpose                          |
-|----------|----------------------------------|
-| `feat`   | A new feature                    |
-| `fix`    | A bug fix                        |
-| `docs`   | Changes to documentation         |
+
+| Type       | Purpose                               |
+| ---------- | ------------------------------------- |
+| `feat`     | A new feature                         |
+| `fix`      | A bug fix                             |
+| `docs`     | Changes to documentation              |
 | `refactor` | Code refactoring (no behavior change) |
-| `test`   | Adding or modifying tests        |
-| `chore`  | Other changes (tooling, CI, etc) |
+| `test`     | Adding or modifying tests             |
+| `chore`    | Other changes (tooling, CI, etc)      |
 
 > 💡 Commit messages are automatically checked via `commitlint` and `husky`.
 
@@ -98,6 +115,7 @@ We use [**Conventional Commits**](https://www.conventionalcommits.org/) to gener
 ## 🐞 Reporting Bugs / Requesting Features
 
 Please use GitHub [Issues](https://github.com/alphaquant/alphaquant/issues) and choose the appropriate template:
+
 - **Bug Report** — something isn't working
 - **Feature Request** — suggest a new idea
 - **Discussion** — open-ended question or idea
@@ -109,6 +127,7 @@ We tag good beginner tasks as `good first issue`!
 ## 📚 Documentation & Examples
 
 Documentation is located in `/docs/` (or `README.md` in each package). You can also contribute:
+
 - Code examples for the `/examples/` folder
 - Improvements to API docs or tutorials
 
@@ -124,6 +143,3 @@ Documentation is located in `/docs/` (or `README.md` in each package). You can a
 
 Thank you again for contributing to AlphaQuant! 🙏  
 Let’s build the future of JavaScript-based quant finance together 💹
-```
-
-

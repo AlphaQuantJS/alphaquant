@@ -14,4 +14,3 @@
 - [ ] CI passes
 - [ ] Code formatted with Prettier
 - [ ] No console.logs or debug code
-

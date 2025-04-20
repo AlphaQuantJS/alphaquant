@@ -1,5 +1,13 @@
 // alphaquant-core/src/StatsUtils.js
 import { DataFrame } from 'data-forge';
+import {
+  calculateMean as typedMean,
+  calculateMeanAndStd,
+  filterValidToTyped,
+  rollingMeanTyped,
+  corrMatrixTyped,
+  formatMatrixAs2D,
+} from './math/index.js';
 
 /**
  * Проверяет, что переданный объект является экземпляром DataFrame
@@ -34,53 +42,15 @@ function assertColumnExists(df, column) {
 function getValidNumericValues(df, column) {
   const values = df.getSeries(column).toArray();
 
-  // Проверка на пустой массив
-  if (values.length === 0) {
-    throw new Error(`Column '${column}' is empty`);
-  }
-
-  // Оптимизированная фильтрация и проверка числовых значений
-  const numericValues = new Array(values.length);
-  let validCount = 0;
-
-  for (let i = 0; i < values.length; i++) {
-    const v = values[i];
-
-    if (v === null || Number.isNaN(v)) continue;
-
-    // Молниеносная проверка типа
-    if (typeof v !== 'number') {
-      throw new Error(
-        `Column '${column}' contains non-numeric value at row ${i}: ${JSON.stringify(v)}`,
-      );
+  try {
+    // Используем оптимизированную функцию для фильтрации и проверки числовых значений
+    return Array.from(filterValidToTyped(values));
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Column '${column}': ${error.message}`);
     }
-
-    numericValues[validCount++] = v;
+    throw new Error(`Column '${column}': Unknown error during validation`);
   }
-
-  if (validCount === 0) {
-    throw new Error(`Column '${column}' contains no valid numeric values`);
-  }
-
-  // Обрезаем массив до фактического размера
-  numericValues.length = validCount;
-  return numericValues;
-}
-
-/**
- * Вычисляет среднее значение массива чисел
- * @param {number[]} values - Массив числовых значений
- * @returns {number} - Среднее значение
- */
-function calculateMean(values) {
-  let sum = 0;
-  const n = values.length;
-
-  for (let i = 0; i < n; i++) {
-    sum += values[i];
-  }
-
-  return sum / n;
 }
 
 /**
@@ -94,31 +64,15 @@ export function mean(df, column) {
   assertDataFrame(df);
   assertColumnExists(df, column);
 
-  const numericValues = getValidNumericValues(df, column);
-  return calculateMean(numericValues);
-}
-
-/**
- * Вычисляет среднее и стандартное отклонение массива за один проход
- * @param {number[]} values - Массив числовых значений
- * @returns {{mean: number, std: number}} - Объект со средним и стандартным отклонением
- */
-function calculateMeanAndStd(values) {
-  let sum = 0;
-  let sumSq = 0;
-  const n = values.length;
-
-  for (let i = 0; i < n; i++) {
-    const value = values[i];
-    sum += value;
-    sumSq += value * value;
+  try {
+    const numericValues = getValidNumericValues(df, column);
+    return typedMean(numericValues);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to compute mean: ${error.message}`);
+    }
+    throw new Error('Failed to compute mean: Unknown error');
   }
-
-  const mean = sum / n;
-  const variance = sumSq / n - mean * mean;
-  const std = Math.sqrt(variance);
-
-  return { mean, std };
 }
 
 /**
@@ -132,45 +86,16 @@ export function std(df, column) {
   assertDataFrame(df);
   assertColumnExists(df, column);
 
-  const numericValues = getValidNumericValues(df, column);
-  const { std } = calculateMeanAndStd(numericValues);
-
-  return std;
-}
-
-/**
- * Вычисляет скользящее среднее для массива значений
- * @param {any[]} values - Массив значений
- * @param {number} windowSize - Размер окна
- * @returns {(number|null)[]} - Массив скользящих средних
- */
-function calculateRollingMean(values, windowSize) {
-  const result = new Array(values.length - windowSize + 1);
-  result.fill(null);
-
-  for (let i = 0; i <= values.length - windowSize; i++) {
-    const windowValues = [];
-    let validCount = 0;
-
-    // Собираем валидные значения в текущем окне
-    for (let j = 0; j < windowSize; j++) {
-      const v = values[i + j];
-      if (typeof v === 'number' && !Number.isNaN(v) && v !== null) {
-        windowValues[validCount++] = v;
-      }
+  try {
+    const numericValues = getValidNumericValues(df, column);
+    const { std } = calculateMeanAndStd(numericValues);
+    return std;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to compute standard deviation: ${error.message}`);
     }
-
-    // Если есть валидные значения, вычисляем среднее
-    if (validCount > 0) {
-      let sum = 0;
-      for (let k = 0; k < validCount; k++) {
-        sum += windowValues[k];
-      }
-      result[i] = sum / validCount;
-    }
+    throw new Error('Failed to compute standard deviation: Unknown error');
   }
-
-  return result;
 }
 
 /**
@@ -196,40 +121,27 @@ export function rollingMean(df, column, windowSize) {
   }
 
   try {
-    const series = df
-      .getSeries(column)
-      .rollingWindow(windowSize)
-      .select((win) => {
-        const values = win.toArray();
-        const validValues = new Array(values.length);
-        let validCount = 0;
+    // Получаем числовые значения
+    const values = getValidNumericValues(df, column);
 
-        // Оптимизированная фильтрация
-        for (let i = 0; i < values.length; i++) {
-          const v = values[i];
-          if (typeof v === 'number' && !Number.isNaN(v) && v !== null) {
-            validValues[validCount++] = v;
-          }
-        }
+    // Используем оптимизированную функцию для скользящего среднего
+    const rollingValues = rollingMeanTyped(values, windowSize);
 
-        if (validCount === 0) return null;
+    // Создаем Series из массива скользящих средних
+    const data = Array.from(rollingValues).map((value) => ({ value }));
+    const series = new DataFrame(data).getSeries('value');
 
-        // Обрезаем массив до фактического размера
-        validValues.length = validCount;
-
-        // Оптимизированное вычисление среднего
-        return calculateMean(validValues);
-      });
-
-    // Явно приводим результат к типу DataFrame
+    // Создаем новый DataFrame с колонкой скользящего среднего
     return /** @type {DataFrame} */ (
-      df.withSeries(`${column}_rollmean`, series).bake()
+      /** @type {unknown} */ (
+        df.withSeries(`${column}_rollmean`, series).bake()
+      )
     );
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(`Rolling mean calculation failed: ${error.message}`);
+      throw new Error(`Failed to compute rolling mean: ${error.message}`);
     }
-    throw new Error('Rolling mean calculation failed: Unknown error');
+    throw new Error('Failed to compute rolling mean: Unknown error');
   }
 }
 
@@ -240,46 +152,39 @@ export function rollingMean(df, column, windowSize) {
  * @throws {Error} - Если DataFrame не содержит числовых колонок
  */
 function getNumericColumns(df) {
-  const cols = df.getColumnNames();
-
-  if (cols.length === 0) {
-    throw new Error('DataFrame has no columns');
+  if (df.count() === 0) {
+    throw new Error('DataFrame is empty');
   }
 
-  // Оптимизированная фильтрация числовых колонок
-  const numericCols = [];
-  numericCols.length = cols.length; // Предварительное выделение памяти
-  let numericColCount = 0;
+  const columnNames = df.getColumnNames();
+  const numericColumns = [];
 
-  for (let i = 0; i < cols.length; i++) {
-    const col = cols[i];
-    const values = df.getSeries(col).toArray();
+  // Проверяем каждую колонку
+  for (const col of columnNames) {
+    try {
+      // Берем первые 10 строк для проверки (или все, если меньше 10)
+      const sample = df.head(Math.min(10, df.count()));
+      const values = sample.getSeries(col).toArray();
 
-    // Ищем хотя бы одно числовое значение
-    let hasNumeric = false;
-    for (let j = 0; j < values.length; j++) {
-      const v = values[j];
-      if (typeof v === 'number' && !Number.isNaN(v) && v !== null) {
-        hasNumeric = true;
-        break;
+      // Проверяем, есть ли хотя бы одно числовое значение
+      const hasNumeric = values.some(
+        (v) => typeof v === 'number' && !Number.isNaN(v) && v !== null,
+      );
+
+      if (hasNumeric) {
+        numericColumns.push(col);
       }
-    }
-
-    if (hasNumeric) {
-      numericCols[numericColCount++] = col;
+    } catch (error) {
+      // Пропускаем колонки, которые вызывают ошибки
+      continue;
     }
   }
 
-  // Обрезаем массив до фактического размера
-  numericCols.length = numericColCount;
-
-  if (numericColCount === 0) {
-    throw new Error(
-      'DataFrame has no numeric columns for correlation calculation',
-    );
+  if (numericColumns.length === 0) {
+    throw new Error('No numeric columns found in DataFrame');
   }
 
-  return numericCols;
+  return numericColumns;
 }
 
 /**
@@ -289,40 +194,12 @@ function getNumericColumns(df) {
  * @returns {number[]} - Массив числовых значений
  */
 function extractNumericValues(df, col) {
-  const allValues = df.getSeries(col).toArray();
-  const values = new Array(allValues.length);
-  let validCount = 0;
-
-  // Оптимизированная фильтрация числовых значений
-  for (let i = 0; i < allValues.length; i++) {
-    const v = allValues[i];
-    if (typeof v === 'number' && !Number.isNaN(v) && v !== null) {
-      values[validCount++] = v;
-    }
+  try {
+    return getValidNumericValues(df, col);
+  } catch (error) {
+    // Если колонка не содержит числовых значений, возвращаем пустой массив
+    return [];
   }
-
-  // Обрезаем массив до фактического размера
-  values.length = validCount;
-  return values;
-}
-
-/**
- * Вычисляет ковариацию между двумя массивами
- * @param {number[]} x - Первый массив
- * @param {number[]} y - Второй массив
- * @param {number} meanX - Среднее значение первого массива
- * @param {number} meanY - Среднее значение второго массива
- * @returns {number} - Ковариация
- */
-function calculateCovariance(x, y, meanX, meanY) {
-  const n = Math.min(x.length, y.length);
-  let cov = 0;
-
-  for (let i = 0; i < n; i++) {
-    cov += (x[i] - meanX) * (y[i] - meanY);
-  }
-
-  return cov / n;
 }
 
 /**
@@ -334,63 +211,44 @@ function calculateCovariance(x, y, meanX, meanY) {
 export function corrMatrix(df) {
   assertDataFrame(df);
 
-  const numericCols = getNumericColumns(df);
+  try {
+    // Получаем числовые колонки
+    const numericCols = getNumericColumns(df);
 
-  // Предварительно вычисляем средние значения и стандартные отклонения
-  /** @type {Record<string, number>} */
-  const means = {};
-  /** @type {Record<string, number>} */
-  const stds = {};
-  /** @type {Record<string, number[]>} */
-  const seriesValues = {};
+    // Извлекаем данные для каждой колонки
+    const arrays = numericCols.map((col) => {
+      const values = extractNumericValues(df, col);
+      return filterValidToTyped(values);
+    });
 
-  // Предварительное выделение памяти для объектов
-  for (let colIdx = 0; colIdx < numericCols.length; colIdx++) {
-    const col = numericCols[colIdx];
+    // Используем оптимизированную функцию для расчета корреляционной матрицы
+    const { matrix, labels } = corrMatrixTyped(arrays, numericCols);
 
-    // Извлекаем числовые значения
-    const values = extractNumericValues(df, col);
-    seriesValues[col] = values;
+    // Преобразуем плоскую матрицу в двумерный массив
+    const matrixArray = formatMatrixAs2D(matrix, numericCols.length);
 
-    // Вычисляем среднее и стандартное отклонение
-    const { mean, std } = calculateMeanAndStd(values);
-    means[col] = mean;
-    stds[col] = std;
-  }
-
-  // Вычисляем корреляционную матрицу
-  const result = new Array(numericCols.length);
-
-  for (let aIdx = 0; aIdx < numericCols.length; aIdx++) {
-    const colA = numericCols[aIdx];
-    /** @type {Record<string, number>} */
-    const row = {};
-    const seriesA = seriesValues[colA];
-    const meanA = means[colA];
-    const stdA = stds[colA];
-
-    for (let bIdx = 0; bIdx < numericCols.length; bIdx++) {
-      const colB = numericCols[bIdx];
-      const seriesB = seriesValues[colB];
-      const meanB = means[colB];
-      const stdB = stds[colB];
-
-      // Проверяем на нулевое стандартное отклонение
-      if (stdA === 0 || stdB === 0) {
-        row[colB] = stdA === stdB ? 1 : 0; // Если оба std = 0, то корреляция = 1
-      } else {
-        // Вычисляем ковариацию оптимизированным способом
-        const cov = calculateCovariance(seriesA, seriesB, meanA, meanB);
-        row[colB] = cov / (stdA * stdB);
+    // Создаем массив объектов для DataFrame
+    const resultData = [];
+    for (let i = 0; i < numericCols.length; i++) {
+      // Используем Record<string, number> для явного указания типа объекта с индексированием по строке
+      const row = /** @type {Record<string, number>} */ ({});
+      for (let j = 0; j < numericCols.length; j++) {
+        row[numericCols[j]] = matrixArray[i][j];
       }
+      resultData.push(row);
     }
 
-    result[aIdx] = row;
-  }
+    // Создаем DataFrame из массива объектов
+    const result = new DataFrame(resultData);
 
-  // Явно приводим результат к типу DataFrame через двойное приведение
-  // @ts-ignore - Игнорируем проверку типов для этого выражения
-  return /** @type {DataFrame} */ (
-    /** @type {unknown} */ (new DataFrame(result).withIndex(numericCols))
-  );
+    // Устанавливаем индекс и возвращаем результат с двойным приведением типа
+    return /** @type {DataFrame} */ (
+      /** @type {unknown} */ (result.withIndex(numericCols).bake())
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to compute correlation matrix: ${error.message}`);
+    }
+    throw new Error('Failed to compute correlation matrix: Unknown error');
+  }
 }

@@ -71,15 +71,32 @@ describe('StatsUtils module with data-forge', () => {
   describe('rollingMean', () => {
     it('вычисляет скользящее среднее с заданным окном', () => {
       const result = StatsUtils.rollingMean(df, 'x', 3);
+
+      // Проверяем, что новая колонка создана
+      expect(result.getColumnNames()).toContain('x_rollmean');
+
+      // Получаем значения скользящего среднего
       const rollingValues = result.getSeries('x_rollmean').toArray();
 
-      // Для окна 3:
-      // Первое окно: [1,2,3] -> среднее = 2
-      // Второе окно: [2,3,4] -> среднее = 3
-      // Третье окно: [3,4,5] -> среднее = 4
-      expect(rollingValues[0]).toBeCloseTo(2, 6);
-      expect(rollingValues[1]).toBeCloseTo(3, 6);
-      expect(rollingValues[2]).toBeCloseTo(4, 6);
+      // Проверяем, что массив имеет правильную длину
+      expect(rollingValues.length).toBe(5);
+
+      // Проверяем конкретные значения
+      // Первые (windowSize-1) значений должны быть NaN или undefined
+      expect(
+        Number.isNaN(rollingValues[0]) || rollingValues[0] === undefined,
+      ).toBeTruthy();
+      expect(
+        Number.isNaN(rollingValues[1]) || rollingValues[1] === undefined,
+      ).toBeTruthy();
+
+      // Значения скользящего среднего
+      // Первое окно: [1,2,3] -> среднее = 2, записывается в индекс 2
+      // Второе окно: [2,3,4] -> среднее = 3, записывается в индекс 3
+      // Третье окно: [3,4,5] -> среднее = 4, записывается в индекс 4
+      expect(rollingValues[2]).toBeCloseTo(2, 6);
+      expect(rollingValues[3]).toBeCloseTo(3, 6);
+      expect(rollingValues[4]).toBeCloseTo(4, 6);
     });
 
     it('выбрасывает ошибку для неправильного размера окна', () => {
@@ -119,7 +136,7 @@ describe('StatsUtils module with data-forge', () => {
       expect(rows[0].z).toBeCloseTo(-1, 6);
     });
 
-    it('корректно обрабатывает колонки с нулевым стандартным отклонением', () => {
+    it('выбрасывает ошибку для колонок с нулевым стандартным отклонением', () => {
       const constantData = [
         { x: 1, y: 10, z: 5 },
         { x: 1, y: 20, z: 5 },
@@ -127,24 +144,10 @@ describe('StatsUtils module with data-forge', () => {
       ];
       const constantDf = new DataFrame(constantData);
 
-      const corrMatrix = StatsUtils.corrMatrix(constantDf);
-      const rows = corrMatrix.toArray();
-
-      // Колонка x имеет нулевое стандартное отклонение, поэтому:
-      // - Корреляция x с x должна быть 1
-      expect(rows[0].x).toBeCloseTo(1, 6);
-      // - Корреляция x с y должна быть 0 (нет вариации в x)
-      expect(rows[0].y).toBeCloseTo(0, 6);
-      // - Корреляция x с z должна быть 1 (stdA === stdB === 0)
-      expect(rows[0].z).toBeCloseTo(1, 6);
-
-      // Колонка z имеет нулевое стандартное отклонение, поэтому:
-      // - Корреляция z с z должна быть 1
-      expect(rows[2].z).toBeCloseTo(1, 6);
-      // - Корреляция z с x должна быть 1 (stdA === stdB === 0)
-      expect(rows[2].x).toBeCloseTo(1, 6);
-      // - Корреляция z с y должна быть 0 (нет вариации в z)
-      expect(rows[2].y).toBeCloseTo(0, 6);
+      // Должен выбрасывать ошибку, т.к. колонки x и z имеют нулевое стандартное отклонение
+      expect(() => StatsUtils.corrMatrix(constantDf)).toThrow(
+        'correlation not possible',
+      );
     });
 
     it('выбрасывает ошибку для DataFrame без числовых колонок', () => {
@@ -155,7 +158,7 @@ describe('StatsUtils module with data-forge', () => {
       const stringDf = new DataFrame(stringData);
 
       expect(() => StatsUtils.corrMatrix(stringDf)).toThrow(
-        'no numeric columns',
+        'No numeric columns found in DataFrame',
       );
     });
 

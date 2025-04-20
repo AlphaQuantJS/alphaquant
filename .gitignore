@@ -42,12 +42,13 @@ yarn-error.log*
 *.tsbuildinfo
 coverage/
 
-TODO.md
-CONTEXT*
-CODING_GUIDELINES.ru.md
 
 # Windsurf
 .windsurfrules
 
+#/packages/core/OPTIMASATION_PLAN.md
+TODO.md
+#CONTEXT*
+CODING_GUIDELINES.ru.md
 TZ.md
-
+/packages/core/benchmark/

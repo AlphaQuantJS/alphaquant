@@ -1,6 +1,13 @@
 // alphaquant-core/src/Preprocessing.js
 
 import { DataFrame } from 'data-forge';
+import {
+  normalizeTyped,
+  zscoreTyped,
+  rollingMeanTyped,
+  filterValidToTyped,
+  calculateMeanAndStd,
+} from './math/index.js';
 
 /**
  * Проверяет, что переданный объект является экземпляром DataFrame
@@ -34,32 +41,16 @@ function assertColumnExists(df, column) {
  */
 function getNumericValues(df, column) {
   const values = df.getSeries(column).toArray();
-  const result = [];
-  result.length = values.length; // Предварительное выделение памяти
 
-  let validCount = 0;
-  for (let i = 0; i < values.length; i++) {
-    const v = values[i];
-
-    if (v === null || Number.isNaN(v)) continue;
-
-    // Молниеносная проверка типа
-    if (typeof v !== 'number') {
-      throw new Error(
-        `Column '${column}' contains non-numeric value at row ${i}: ${JSON.stringify(v)}`,
-      );
+  try {
+    // Используем оптимизированную функцию для фильтрации и проверки числовых значений
+    return Array.from(filterValidToTyped(values));
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Column '${column}': ${error.message}`);
     }
-
-    result[validCount++] = v;
+    throw new Error(`Column '${column}': Unknown error during validation`);
   }
-
-  if (validCount === 0) {
-    throw new Error(`Column '${column}' contains no valid numeric values`);
-  }
-
-  // Обрезаем массив до фактического размера
-  result.length = validCount;
-  return result;
 }
 
 /**
@@ -99,24 +90,6 @@ export function dropNaN(df) {
 }
 
 /**
- * Находит минимальное и максимальное значения в массиве за один проход
- * @param {number[]} values - Массив числовых значений
- * @returns {{min: number, max: number}} - Объект с минимальным и максимальным значениями
- */
-function findMinMax(values) {
-  let min = values[0];
-  let max = values[0];
-
-  for (let i = 1; i < values.length; i++) {
-    const v = values[i];
-    if (v < min) min = v;
-    if (v > max) max = v;
-  }
-
-  return { min, max };
-}
-
-/**
  * Normalizes a column to [0, 1]
  *
  * @param {DataFrame} df - Input DataFrame
@@ -128,50 +101,28 @@ export function normalize(df, column) {
   assertDataFrame(df);
   assertColumnExists(df, column);
 
-  const values = getNumericValues(df, column);
-  const { min, max } = findMinMax(values);
+  try {
+    // Получаем числовые значения
+    const values = getNumericValues(df, column);
 
-  // Проверка на диапазон значений
-  if (min === max) {
-    throw new Error(
-      `Column '${column}' has constant values, normalization not possible`,
+    // Используем оптимизированную функцию нормализации
+    const normalized = normalizeTyped(values);
+
+    // Создаем Series из массива перед передачей в withSeries
+    const normalizedSeries = createSeriesFromArray(Array.from(normalized));
+
+    // Создаем новый DataFrame с нормализованной колонкой
+    return /** @type {DataFrame} */ (
+      df.withSeries(`${column}_norm`, normalizedSeries).bake()
     );
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(
+        `Failed to normalize column '${column}': ${error.message}`,
+      );
+    }
+    throw new Error(`Failed to normalize column '${column}': Unknown error`);
   }
-
-  // Оптимизированное вычисление нормализованных значений
-  const range = max - min;
-  const normalized = values.map((value) => (value - min) / range);
-
-  // Создаем Series из массива перед передачей в withSeries
-  const normalizedSeries = createSeriesFromArray(normalized);
-
-  // Создаем новый DataFrame с нормализованной колонкой
-  return /** @type {DataFrame} */ (
-    df.withSeries(`${column}_norm`, normalizedSeries).bake()
-  );
-}
-
-/**
- * Вычисляет среднее и стандартное отклонение массива за один проход
- * @param {number[]} values - Массив числовых значений
- * @returns {{mean: number, std: number}} - Объект со средним и стандартным отклонением
- */
-function calculateMeanAndStd(values) {
-  let sum = 0;
-  let sumSq = 0;
-  const n = values.length;
-
-  for (let i = 0; i < n; i++) {
-    const value = values[i];
-    sum += value;
-    sumSq += value * value;
-  }
-
-  const mean = sum / n;
-  const variance = sumSq / n - mean * mean;
-  const std = Math.sqrt(variance);
-
-  return { mean, std };
 }
 
 /**
@@ -186,26 +137,26 @@ export function zscore(df, column) {
   assertDataFrame(df);
   assertColumnExists(df, column);
 
-  const values = getNumericValues(df, column);
-  const { mean, std } = calculateMeanAndStd(values);
+  try {
+    // Получаем числовые значения
+    const values = getNumericValues(df, column);
 
-  // Проверка на стандартное отклонение
-  if (std === 0) {
-    throw new Error(
-      `Column '${column}' has zero standard deviation, z-score not possible`,
+    // Используем оптимизированную функцию z-score
+    const standardized = zscoreTyped(values);
+
+    // Создаем Series из массива перед передачей в withSeries
+    const standardizedSeries = createSeriesFromArray(Array.from(standardized));
+
+    // Создаем новый DataFrame со стандартизованной колонкой
+    return /** @type {DataFrame} */ (
+      df.withSeries(`${column}_zscore`, standardizedSeries).bake()
     );
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to z-score column '${column}': ${error.message}`);
+    }
+    throw new Error(`Failed to z-score column '${column}': Unknown error`);
   }
-
-  // Оптимизированное вычисление z-score
-  const standardized = values.map((value) => (value - mean) / std);
-
-  // Создаем Series из массива перед передачей в withSeries
-  const standardizedSeries = createSeriesFromArray(standardized);
-
-  // Создаем новый DataFrame со стандартизованной колонкой
-  return /** @type {DataFrame} */ (
-    df.withSeries(`${column}_zscore`, standardizedSeries).bake()
-  );
 }
 
 /**
@@ -215,11 +166,20 @@ export function zscore(df, column) {
  * @throws {Error} - Если формат даты некорректен
  */
 function formatDateToYYYYMMDD(dateValue) {
-  const date = new Date(dateValue);
-  if (isNaN(date.getTime())) {
-    throw new Error(`Invalid date format: ${JSON.stringify(dateValue)}`);
+  let date;
+  try {
+    date = new Date(dateValue);
+    if (isNaN(date.getTime())) {
+      throw new Error('Invalid date');
+    }
+  } catch (e) {
+    if (e instanceof Error) {
+      throw new Error(`Failed to parse date: ${dateValue}. ${e.message}`);
+    }
+    throw new Error(`Failed to parse date: ${dateValue}. Unknown error`);
   }
-  return date.toISOString().slice(0, 10); // YYYY-MM-DD
+
+  return date.toISOString().split('T')[0];
 }
 
 /**
@@ -228,14 +188,15 @@ function formatDateToYYYYMMDD(dateValue) {
  * @returns {number|null} - Среднее значение или null для пустого массива
  */
 function calculateMean(values) {
-  if (values.length === 0) return null;
+  if (!values || values.length === 0) return null;
 
-  let sum = 0;
-  for (let i = 0; i < values.length; i++) {
-    sum += values[i];
+  try {
+    // Используем оптимизированную функцию для расчета среднего
+    const { mean } = calculateMeanAndStd(values);
+    return mean;
+  } catch (error) {
+    return null;
   }
-
-  return sum / values.length;
 }
 
 /**
@@ -251,61 +212,103 @@ export function resample(df, dateCol, valueCols) {
   assertDataFrame(df);
   assertColumnExists(df, dateCol);
 
-  // Проверяем существование всех колонок для агрегации
+  // Проверяем существование всех колонок со значениями
   for (const col of valueCols) {
     assertColumnExists(df, col);
   }
 
+  // Группируем данные по дате
   try {
-    const parsed = /** @type {DataFrame} */ (
-      df.transformSeries({
-        [dateCol]: (val) => formatDateToYYYYMMDD(val),
-      })
-    );
-
-    // Явно приводим результат к типу DataFrame
-    return /** @type {DataFrame} */ (
-      parsed
-        .groupBy((row) => row[dateCol])
-        .select((group) => {
-          const rows = group.toArray();
-          /** @type {Record<string, number | null>} */
-          const avg = {};
-
-          for (const col of valueCols) {
-            const vals = [];
-            vals.length = rows.length; // Предварительное выделение памяти
-
-            let validCount = 0;
-            for (let i = 0; i < rows.length; i++) {
-              const v = rows[i][col];
-
-              if (v === null || Number.isNaN(v)) continue;
-
-              // Молниеносная проверка типа
-              if (typeof v !== 'number') {
-                throw new Error(
-                  `Column '${col}' contains non-numeric value at row ${i}: ${JSON.stringify(v)}`,
-                );
-              }
-
-              vals[validCount++] = v;
-            }
-
-            // Обрезаем массив до фактического размера
-            vals.length = validCount;
-            avg[col] = calculateMean(vals);
+    const grouped = df
+      .groupBy((row) => {
+        try {
+          return formatDateToYYYYMMDD(row[dateCol]);
+        } catch (e) {
+          if (e instanceof Error) {
+            throw new Error(
+              `Failed to parse date in row: ${JSON.stringify(row)}. ${e.message}`,
+            );
           }
+          throw new Error(
+            `Failed to parse date in row: ${JSON.stringify(row)}. Unknown error`,
+          );
+        }
+      })
+      .select((group) => {
+        const result = {
+          [dateCol]: group.first()[dateCol],
+        };
 
-          return { [dateCol]: group.first()[dateCol], ...avg };
-        })
-        .inflate()
-        .bake()
+        // Для каждой колонки вычисляем среднее
+        for (const col of valueCols) {
+          const values = group
+            .getSeries(col)
+            .where((v) => v !== null && !Number.isNaN(v))
+            .toArray();
+
+          result[col] = calculateMean(values);
+        }
+
+        return result;
+      });
+
+    // Приведение типа с использованием промежуточного unknown
+    return /** @type {DataFrame} */ (/** @type {unknown} */ (grouped.bake()));
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to resample: ${error.message}`);
+    }
+    throw new Error(`Failed to resample: Unknown error`);
+  }
+}
+
+/**
+ * Compute rolling mean for a column
+ *
+ * @param {DataFrame} df - Input DataFrame
+ * @param {string} column - Column to compute rolling mean for
+ * @param {number} windowSize - Size of the rolling window
+ * @returns {DataFrame} - DataFrame with new column `${column}_rollmean`
+ * @throws {Error} - If column doesn't exist or window size is invalid
+ */
+export function rollingMean(df, column, windowSize) {
+  assertDataFrame(df);
+  assertColumnExists(df, column);
+
+  if (!Number.isInteger(windowSize) || windowSize <= 0) {
+    throw new Error('Window size must be a positive integer');
+  }
+
+  if (windowSize > df.count()) {
+    throw new Error(
+      `Window size (${windowSize}) is larger than the DataFrame length (${df.count()})`,
+    );
+  }
+
+  try {
+    // Получаем числовые значения
+    const values = getNumericValues(df, column);
+
+    // Используем оптимизированную функцию для скользящего среднего
+    const rollingValues = rollingMeanTyped(values, windowSize);
+
+    // Преобразуем TypedArray обратно в обычный массив для совместимости с DataFrame
+    const rollingArray = Array.from(rollingValues);
+
+    // Создаем Series из массива перед передачей в withSeries
+    const rollingSeries = createSeriesFromArray(rollingArray);
+
+    // Создаем новый DataFrame с колонкой скользящего среднего
+    // Используем двойное приведение типа через unknown для обхода проверки типов
+    return /** @type {DataFrame} */ (
+      /** @type {unknown} */ (
+        df.withSeries(`${column}_rollmean`, rollingSeries).bake()
+      )
     );
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(`Resampling failed: ${error.message}`);
+      throw new Error(`Failed to compute rolling mean: ${error.message}`);
     }
-    throw new Error('Resampling failed: Unknown error');
+    throw new Error(`Failed to compute rolling mean: Unknown error`);
   }
 }

@@ -16,10 +16,10 @@
  * @typedef {function(any[]): any} AggregationFunction
  *
  * @typedef {Object} DataFrameLike
- * @property {function(): string[]} getColumnNames - Функция для получения имен колонок
- * @property {function(string): Series} getSeries - Функция для получения серии по имени колонки
- * @property {function(string, Series): DataFrame} withSeries - Функция для добавления серии
- * @property {function(): any[]} toArray - Функция для преобразования в массив
+ * @property {function(): string[]} getColumnNames - Function to get column names
+ * @property {function(string): Series} getSeries - Function to get a series by column name
+ * @property {function(string, Series): DataFrame} withSeries - Function to add a series
+ * @property {function(): any[]} toArray - Function to convert to an array
  *
  * @typedef {any} AnyDataFrame
  */

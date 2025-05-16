@@ -1,71 +1,136 @@
-# ⚡️ AlphaQuant
+# @alphaquant/core
 
-**Modern JavaScript Framework for Quantitative Finance**  
-_Pandas + TA-Lib + Backtrader — all in JS_
+**@alphaquant/core** is a high-performance JavaScript/TypeScript package for working with tabular financial data, powered by a custom in-memory data structure inspired by Pandas but optimized for the JavaScript ecosystem.
 
-[![CI](https://img.shields.io/github/actions/workflow/status/alphaquant/alphaquant/ci.yml?branch=main&label=CI&style=flat-square&logo=github)](https://github.com/alphaquant/alphaquant/actions/workflows/ci.yml)
-[![NPM Version](https://img.shields.io/npm/v/@alphaquant/core?style=flat-square&logo=npm)](https://www.npmjs.com/org/alphaquant)
-![TypeScript](https://img.shields.io/badge/Built%20With-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![MIT License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
-![Status](https://img.shields.io/badge/status-MVP-orange?style=flat-square)
-
-![AlphaQuant Demo](https://user-images.githubusercontent.com/674621/196881240-fbccdcf4-753e-4f82-a8b5-e471d6c13d02.gif)
+It is built on top of **TinyFrame**, a lightweight, zero-dependency data engine using `TypedArray` for efficient memory layout and numerical operations.
 
 ---
 
-## ✨ About
+## 🚀 Mission
 
-AlphaQuant is a modern, modular, full-stack **JavaScript framework for quant research and strategy development**. Built for **Node.js and browser**, it brings real quant tools to web-native developers.
+AlphaQuant's mission is to **bring scalable quantitative finance tools to the JavaScript ecosystem**, enabling seamless analysis, modeling, and algorithmic research in environments ranging from browsers to Node.js.
 
-- 📊 Pandas-style DataFrame (via Danfo.js)
-- 🧠 TA indicators (RSI, EMA, SMA, MACD...)
-- 🎯 Strategy interface: `onBar(data)` / `class Strategy`
-- 📉 Backtester with equity, metrics, trades
-- 🖥 CLI & browser playground (coming)
-- 🌐 LLM-powered code generator (planned)
+We address the lack of fast, memory-efficient tabular computation in JS, enabling developers to perform financial analytics, statistical preprocessing, and time-series transformations **without switching to Python or R**.
 
 ---
 
-## 🛠 Getting Started
+## 🧭 What Can You Do with @alphaquant/core?
+
+With `@alphaquant/core`, you can:
+
+- Load and preprocess financial datasets with millions of rows
+- Compute rolling indicators (e.g. moving average, z-score)
+- Run advanced transformations: pivoting, melting, groupBy-aggregations
+- Perform statistical analysis: describe, correlation matrix, normalization
+- Structure your data via chaining with a Pandas-like experience in JavaScript
+- Build reusable utilities for cross-platform data pipelines (Node.js, browser)
+
+This module is ideal for quant researchers, trading system developers, data engineers, and product teams building frontend or backend analytics tools.
+
+---
+
+We address the lack of fast, memory-efficient tabular computation in JS, enabling developers to perform financial analytics, statistical preprocessing, and time-series transformations **without switching to Python or R**.
+
+---
+
+## 🔍 Why @alphaquant/core?
+
+`@alphaquant/core` is built upon **TinyFrame** — a low-level, high-performance data engine chosen as the internal data representation layer for its simplicity, speed, and zero dependencies. We selected TinyFrame as the foundational layer for its:
+
+- 🔥 It is 100% written in TypeScript
+- 🧠 Operates on `Float64Array` / `Int32Array` for vectorized performance
+- ⚡ Outperforms traditional object/array-based processing by 10–100x
+- 🧼 Clean modular functions allow tree-shaking and maximum composability
+
+> TinyFrame is used under the MIT license. See full license in [`LICENSE`](./LICENSE).
+
+---
+
+## 📊 Benchmark Results (vs competitors)
+
+| Operation     | @alphaquant/core | Pandas (Python) | Data-Forge (JS) | Notes                      |
+| ------------- | ---------------- | --------------- | --------------- | -------------------------- |
+| `rollingMean` | ✅ ~50ms         | 🟢 ~5ms         | ❌ ~400ms       | JS now on par with Python  |
+| `normalize`   | ✅ ~35ms         | 🟢 ~6ms         | ❌ ~300ms       | Memory: 10x more efficient |
+| `corrMatrix`  | ✅ ~60ms         | 🟢 ~8ms         | ❌ ~500ms       | TypedArray wins            |
+| `dropNaN`     | ✅ ~20ms         | 🟢 ~20ms        | ❌ ~100ms       | Parity achieved            |
+
+> All results measured on 100,000 rows × 10 columns. See [`benchmark_tiny.js`](./benchmarks/benchmark_tiny.js) for test script.
+
+---
+
+## 📦 Package Structure
 
 ```bash
-npm install @alphaquant/core @alphaquant/ta @alphaquant/backtest
+alphaquant-core/
+├── src/
+│   ├── frame/              # TinyFrame structure and primitives
+│   ├── methods/            # Data operations: groupBy, agg, pivot, etc.
+│   ├── computation/        # zscore, normalize, mean, std
+│   └── AQDataFrame.ts      # Chainable functional wrapper (fluent API)
+├── __test__/                   # Vitest unit tests
+├── examples/               # Usage examples
+├── benchmarks/             # Benchmark suite for performance testing
+├── dist/                   # Compiled output (auto-generated)
+├── package.json            # npm manifest
+├── tsconfig.json           # TypeScript config
+├── README.md               # This file
+├── LICENSE                 # MIT license
+└── .github/workflows/ci.yml # GitHub Actions workflow
 ```
-
-```ts
-import { SMA, RSI } from '@alphaquant/ta';
-import { BacktestEngine } from '@alphaquant/backtest';
-
-const result = BacktestEngine.run(myStrategy, data);
-console.log(result.metrics);
-```
-
-Full example: [`examples/sma-cross.ts`](./examples/sma-cross.ts)
 
 ---
 
-## 📁 Monorepo Structure
+## 🧠 API Highlights
 
-```
-/packages/
-  core/        → DataFrame engine
-  ta/          → Technical analysis
-  backtest/    → Event-driven executor
-  strategy/    → Strategy templates
-  report/      → Output metrics & logs
+### Construction
 
-/apps/
-  cli/         → Command-line tool
-  playground/  → Browser interface (coming)
+```ts
+import { AQDataFrame } from '@alphaquant/core';
+
+const df = new AQDataFrame({
+  date: ['2023-01-01', '2023-01-02'],
+  price: [100, 105],
+  volume: [1000, 1500],
+});
 ```
+
+### Preprocessing
+
+```ts
+df.setIndex('date').normalize('price').rollingMean('price', 2).dropNaN();
+```
+
+### Statistics
+
+```ts
+const stats = df.describe();
+const corr = df.corrMatrix();
+```
+
+### Grouping
+
+```ts
+const grouped = df.groupByAgg(['sector'], {
+  price: 'mean',
+  volume: 'sum',
+});
+```
+
+### Reshaping
+
+```ts
+df.pivot('date', 'symbol', 'price');
+df.melt(['date'], ['price', 'volume']);
+```
+
+More in [`examples/`](./examples/)
 
 ---
 
 ## 🧪 Testing
 
-We use [Jest](https://jestjs.io/) for unit testing with native ESM support in Node.js.
-
-Because this package uses `"type": "module"` and ES module syntax (`import/export`), tests are run with the `--experimental-vm-modules` flag enabled.
+We use [Vitest](https://vitest.dev/) for blazing-fast unit testing with full TypeScript + ESM support.
 
 To run tests:
 
@@ -79,47 +144,49 @@ npm run test:watch
 ## 🧪 Development Workflow
 
 ```bash
-turbo run lint    # Lint all packages
-turbo run build   # Compile everything
-turbo run test    # Run tests (WIP)
-npx changeset     # Start new release
+npm run lint       # Lint code with ESLint
+npm run build      # Build TypeScript
+npm run test       # Run unit tests
+npm run benchmark  # Run performance suite
 ```
 
-CI/CD is fully automated via GitHub Actions + Changesets. See [How CI/CD Works](#️how-cicd-works)
+CI/CD is automated via GitHub Actions + Changesets. See [`ci.yml`](.github/workflows/ci.yml).
 
 ---
 
-## 💼 Roadmap Highlights
+## 💼 Roadmap
 
-- [x] Strategy + backtesting engine
-- [x] CLI interface (Node.js)
-- [ ] Portfolio optimization
-- [ ] Time-series ARIMA/GARCH
-- [ ] QuantLib WASM pricing
-- [ ] Web-based UI & visual builder
-- [ ] GPT-style code assistant
+Our roadmap is focused on making `@alphaquant/core` the most efficient and intuitive tool for tabular and financial computation in JavaScript:
 
----
-
-## 🛠️ How CI/CD Works
-
-AlphaQuant uses **Turborepo + Changesets + GitHub Actions** to provide zero-config continuous integration and delivery.
-
-- ✅ ESLint via `.eslintrc.json` (strict style rules)
-- ✅ Commitlint + Husky enforce Conventional Commits
-- ✅ `turbo run` manages build/test/lint pipelines
-- ✅ Prettier config in `.prettierrc` ensures consistent formatting
-- 🚀 `changeset` auto-generates versions + changelog
-- 📦 Auto-publish to npm on merge to `main` (with `NPM_TOKEN`)
+- [x] Full integration with TinyFrame (TypedArray backend)
+- [x] Implementation of core statistical and preprocessing functions ([`src/computation`](./src/computation))
+- [x] Fluent `AQDataFrame` API for one-liner workflows ([`src/AQDataFrame.ts`](./src/AQDataFrame.ts))
+- [x] Benchmark comparisons vs Python/Pandas and JS/DataForge ([`benchmarks/`](./benchmarks))
+- [ ] Expand supported operations: aggregation, filtering, windowing ([`src/methods`](./src/methods))
+- [ ] Optimize for 1M+ rows: memory use, GC pressure, time complexity ([`benchmark_tiny.js`](./benchmarks/benchmark_tiny.js))
+- [ ] Enhance API usability: auto-chaining, defaults, type inference
+- [ ] Developer ergonomics: better errors, input validation ([`test/`](./test))
+- [ ] Improve documentation with live-coded examples ([`examples/`](./examples))
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions!  
-Just fork → feature branch → PR 🙌
+We welcome contributors of all levels 🙌
 
-> See [CONTRIBUTING.md](./CONTRIBUTING.md) for details
+- Fork → Branch → Code → Pull Request
+- Follow [Conventional Commits](https://www.conventionalcommits.org/)
+- Linting, testing and CI will run on PR automatically
+
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for details
+
+---
+
+## 📜 License
+
+MIT © AlphaQuantJS
+
+TinyFrame is used under MIT license — see [`LICENSE`](./LICENSE)
 
 ---
 

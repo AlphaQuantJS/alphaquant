@@ -1,11 +1,11 @@
-name: CI / fail
-
+name: fail-check
 on:
   pull_request:
-
+    branches: [main]
 jobs:
   test:
+    name: fail
     runs-on: ubuntu-latest
     steps:
-      - name: Fail on purpose
+      - name: Fail always
         run: exit 1

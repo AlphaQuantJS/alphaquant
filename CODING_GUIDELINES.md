@@ -74,6 +74,208 @@ function safeProcess(data) {
 }
 ```
 
+### ✅ Optimizations Based on TinyFrame Experience
+
+#### Efficient Array Handling
+
+- **Use typed arrays** (`Float64Array`, `Uint32Array`) for numeric data instead of regular JavaScript arrays.
+- **Avoid data copying** — use references or in-place operations where possible.
+- **Pre-allocate memory** for result arrays in a single call, knowing the size in advance.
+- **Use array pooling** for temporary arrays to reduce garbage collector pressure.
+
+```js
+// Bad
+const result = [];
+for (let i = 0; i < data.length; i++) {
+  result.push(data[i] * 2);
+}
+
+// Good
+const result = new Float64Array(data.length);
+for (let i = 0; i < data.length; i++) {
+  result[i] = data[i] * 2;
+}
+```
+
+#### Algorithmic Optimizations
+
+- **Avoid nested loops** — aim for O(n) complexity instead of O(n²).
+- **Use sliding windows** instead of recalculating for overlapping data ranges.
+- **Apply prefix-sum** for efficient calculation of sliding statistics on large windows.
+- **Cache intermediate results** to avoid repeated calculations.
+
+```js
+// Bad (O(n*k))
+function rollingSum(values, windowSize) {
+  const result = new Float64Array(values.length - windowSize + 1);
+  for (let i = 0; i <= values.length - windowSize; i++) {
+    let sum = 0;
+    for (let j = 0; j < windowSize; j++) {
+      sum += values[i + j];
+    }
+    result[i] = sum;
+  }
+  return result;
+}
+
+// Good (O(n))
+function rollingSum(values, windowSize) {
+  const result = new Float64Array(values.length - windowSize + 1);
+  let sum = 0;
+
+  // Initialize first window
+  for (let i = 0; i < windowSize; i++) {
+    sum += values[i];
+  }
+  result[0] = sum;
+
+  // Sliding window
+  for (let i = 1; i <= values.length - windowSize; i++) {
+    sum = sum - values[i - 1] + values[i + windowSize - 1];
+    result[i] = sum;
+  }
+  return result;
+}
+```
+
+#### Efficient NaN and Invalid Value Handling
+
+- **Use counters for invalid values** instead of repeated `isNaN()` checks.
+- **Apply validity masks** for filtering NaN values in a single pass.
+- **Avoid checks on each iteration** — group checks and perform them in advance.
+
+```js
+// Bad
+function hasNaN(array) {
+  for (let i = 0; i < array.length; i++) {
+    if (isNaN(array[i])) return true;
+  }
+  return false;
+}
+
+// Good
+function countNaN(array) {
+  let badCount = 0;
+  for (let i = 0; i < array.length; i++) {
+    if (isNaN(array[i])) badCount++;
+  }
+  return badCount;
+}
+```
+
+#### Hashing and Duplicate Detection
+
+- **Avoid using `JSON.stringify`** for data serialization — use efficient hash functions (FNV-1a, Murmur3).
+- **Use hash tables with open addressing** instead of Map for large datasets.
+- **Pre-compute hashes** for reused values.
+
+```js
+// Bad
+function findDuplicates(rows, keyColumns) {
+  const seen = new Set();
+  return rows.filter((row) => {
+    const key = JSON.stringify(keyColumns.map((col) => row[col]));
+    if (seen.has(key)) return true;
+    seen.add(key);
+    return false;
+  });
+}
+
+// Good
+function hashRow(row, keyColumns) {
+  let hash = 2166136261; // FNV-1a offset basis
+  for (const col of keyColumns) {
+    const val = row[col];
+    const str = String(val);
+    for (let i = 0; i < str.length; i++) {
+      hash ^= str.charCodeAt(i);
+      hash = (hash * 16777619) >>> 0; // FNV prime
+    }
+  }
+  return hash;
+}
+
+function findDuplicates(rows, keyColumns) {
+  const seen = new Set();
+  return rows.filter((row) => {
+    const hash = hashRow(row, keyColumns);
+    if (seen.has(hash)) return true;
+    seen.add(hash);
+    return false;
+  });
+}
+```
+
+#### Vectorization and Parallelism
+
+- **Use block processing** for better vectorization in V8.
+- **Split large tasks** into subtasks for parallel processing.
+- **Consider using Web Workers** for CPU-intensive operations.
+
+#### General Performance Recommendations
+
+- **Measure before optimizing** — use profiling to identify bottlenecks.
+- **Set performance budgets** for critical operations.
+- **Test on realistic data volumes** — optimizations may only show up on large datasets.
+- **Avoid premature optimization** — first achieve correctness, then optimize critical paths.
+
+## 📊 Работа с данными и тестирование
+
+### ✅ Обработка специальных значений
+
+При работе с числовыми данными важно четко определить и документировать, как библиотека обрабатывает специальные значения:
+
+- **`null`** - преобразуется в `0` в числовых колонках
+- **`undefined`** - преобразуется в `NaN` в числовых колонках
+- **`NaN`** - сохраняется как `NaN`
+
+### ✅ Сохранение исходных данных
+
+- **Сохраняйте "сырые" значения** - храните оригинальные данные рядом с оптимизированными для вычислений
+- **Используйте маски валидности** - отслеживайте, где были `undefined` и другие специальные значения
+- **Разделяйте данные и метаданные** - не теряйте информацию при оптимизации
+
+```js
+// Рекомендуемый подход
+export function createFrame(data) {
+  const columns = {}; // оптимизированные данные
+  const rawColumns = {}; // исходные данные
+  // ...
+
+  return { columns, rawColumns, rowCount, columnNames };
+}
+```
+
+### ✅ Явные значения по умолчанию
+
+- **Документируйте поведение по умолчанию** - например, какой тип стандартного отклонения (популяционное или выборочное) используется
+- **Избегайте неоднозначных дефолтов** - они приводят к разным ожиданиям в тестах
+- **Выносите правила преобразования в отдельные функции** - например, `normalizeNumeric(value)`
+
+### ✅ Тестирование
+
+- **Тест-кейсы должны быть согласованы** - они не должны противоречить друг другу
+- **Документируйте ожидаемое поведение** - особенно для обработки специальных значений
+- **Избегайте специальных обработок для тестов** - функции должны работать универсально
+
+```js
+// Плохо: специальная обработка для конкретного теста
+if (values.length === 6 && values[0] === 1 && Number.isNaN(values[1])) {
+  return 1.92; // Магическое число для теста
+}
+
+// Хорошо: универсальный алгоритм, который работает для всех случаев
+function calculateStandardDeviation(values, population = true) {
+  // Универсальный алгоритм...
+}
+```
+
+### ✅ Оптимизация вычислений
+
+- **Избегайте двойных проходов** - не делайте отдельную валидацию, если типы уже проверены
+- **Доверяйте структуре данных** - если `createFrame` гарантирует однородность типов, не перепроверяйте это
+- **Минимизируйте копирование данных** - работайте с исходными массивами, где это возможно
+
 ## 💰 Numerical Accuracy
 
 ### ✅ Use Integers for Money (e.g., cents)

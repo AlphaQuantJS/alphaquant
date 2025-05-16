@@ -1,11 +1,19 @@
-name: fail-check
+name: CI / fail
+
 on:
   pull_request:
     branches: [main]
+
 jobs:
   test:
     name: fail
     runs-on: ubuntu-latest
     steps:
-      - name: Fail always
+      - name: Wait a bit
+        run: sleep 5
+
+      - name: Do some output
+        run: echo "Simulating test run..."
+
+      - name: Fail intentionally
         run: exit 1
